@@ -40,6 +40,7 @@ public class PlateauConcret extends PlateauAbstrait {
 		} catch (ClassNotFoundException e) {
 			throw new RuntimeException(e);
 		}
+		System.out.println("size_his:"+histories.size()+", steps_cur:"+current_step);
 	}
 
 	public void joue(int valeur, int i, int j) {
@@ -85,6 +86,7 @@ public class PlateauConcret extends PlateauAbstrait {
 		}
 		histories.add(action);
 		current_step = histories.size()-1;
+		System.out.println("[mettre_a_jour_history] size_his:"+histories.size()+", steps_cur:"+current_step);
 	}
 
 	public int valeurCase(int i, int j) {
@@ -114,10 +116,13 @@ public class PlateauConcret extends PlateauAbstrait {
 			current_step -= 1;
 			if(action instanceof ActionJoue){
 				ActionJoue actJoue = (ActionJoue) action;
+				System.out.println("action_efface:"+actJoue.getValeur_old()+","+actJoue.getLigne()+","+actJoue.getCol());
 				fixeValeurCase(actJoue.getValeur_old(), actJoue.getLigne(), actJoue.getCol());
 			}else
-			if(action instanceof ActionJoue){
+			if(action instanceof ActionEfface){
 				ActionEfface actEfface = (ActionEfface) action;
+				System.out.println("action_joue:"+actEfface.getLigne_min()+","+actEfface.getCol_min()
+						+","+actEfface.getLigne_max()+","+actEfface.getCol_max());
 				int[] data_efface = actEfface.getData_efface();
 				int nb_cols = (actEfface.getCol_max()-actEfface.getCol_min()) + 1;
 				for(int i=0; i<data_efface.length; i++){
@@ -126,6 +131,7 @@ public class PlateauConcret extends PlateauAbstrait {
 					fixeValeurCase(data_efface[i], ligne, col);
 				}
 			}
+			System.out.println("size_his:"+histories.size()+", steps_cur:"+current_step);
 		}
 	}
 
@@ -135,11 +141,12 @@ public class PlateauConcret extends PlateauAbstrait {
 			Action action = histories.get(current_step);
 			if(action instanceof ActionJoue){
 				ActionJoue actJoue = (ActionJoue) action;
-				joue(actJoue.getValeur_new(), actJoue.getLigne(), actJoue.getCol());
+				super.joue(actJoue.getValeur_new(), actJoue.getLigne(), actJoue.getCol());
 			}else
-			if(action instanceof ActionJoue){
+			if(action instanceof ActionEfface){
 				ActionEfface actEfface = (ActionEfface) action;
-				efface(actEfface.getLigne_min(), actEfface.getCol_min(), actEfface.getLigne_max(), actEfface.getCol_max());
+				System.out.println(actEfface.getData_efface());
+				super.efface(actEfface.getLigne_min(), actEfface.getCol_min(), actEfface.getLigne_max(), actEfface.getCol_max());
 			}
 		}
 	}
