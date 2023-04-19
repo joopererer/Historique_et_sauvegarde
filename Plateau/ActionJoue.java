@@ -1,8 +1,9 @@
 package Plateau;
 
-import java.io.Serializable;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 
-public class ActionJoue extends Action implements Serializable {
+public class ActionJoue extends Action {
 
     private int valeur_old;
     private int valeur_new;
@@ -11,8 +12,12 @@ public class ActionJoue extends Action implements Serializable {
 
     private int col;
 
-    public ActionJoue(int valeur_old, int valeur_new, int i, int j){
+    public ActionJoue(){
         super(TYPE_ACT_JOUE);
+    }
+
+    public ActionJoue(int valeur_old, int valeur_new, int i, int j){
+        this();
         this.valeur_old = valeur_old;
         this.valeur_new = valeur_new;
         this.ligne = i;
@@ -50,5 +55,22 @@ public class ActionJoue extends Action implements Serializable {
     public void setCol(int col) {
         this.col = col;
     }
+
+    @Override
+    public void write(FileOutputStream fos) throws Exception {
+        fos.write(valeur_old);
+        fos.write(valeur_new);
+        fos.write(ligne);
+        fos.write(col);
+    }
+
+    public Action read(FileInputStream fis) throws Exception {
+        valeur_old = fis.read();
+        valeur_new = fis.read();
+        ligne = fis.read();
+        col = fis.read();
+        return this;
+    }
+
 
 }

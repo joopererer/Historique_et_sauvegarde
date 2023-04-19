@@ -1,11 +1,12 @@
 package Plateau;
 
-import java.io.Serializable;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 
-public abstract class Action implements Serializable {
+public abstract class Action {
 
-    static int TYPE_ACT_JOUE = 0x01;
-    static int TYPE_ACT_EFFACE = 0x02;
+    public static final int TYPE_ACT_JOUE = 0x01;
+    public static final int TYPE_ACT_EFFACE = 0x02;
 
     private int action;
 
@@ -20,4 +21,9 @@ public abstract class Action implements Serializable {
     public void setAction(int action) {
         this.action = action;
     }
+
+    public abstract void write(FileOutputStream fos) throws Exception;
+
+    public abstract Action read(FileInputStream fis) throws Exception;
+
 }

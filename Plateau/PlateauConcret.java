@@ -1,10 +1,11 @@
 package Plateau;
 
-import Plateau.PlateauAbstrait;
-
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+
+import static Plateau.Action.TYPE_ACT_EFFACE;
+import static Plateau.Action.TYPE_ACT_JOUE;
 
 public class PlateauConcret extends PlateauAbstrait {
 
@@ -19,19 +20,23 @@ public class PlateauConcret extends PlateauAbstrait {
 	public PlateauConcret(String fichier) {
 		try {
 			FileInputStream fis = new FileInputStream(fichier);
-			ObjectInputStream is = new ObjectInputStream(fis);
 
 			// lire map data
-			cases = (int[][]) is.readObject();
+			int lignes = fis.read();
+			int cols = fis.read();
+			cases = new int[lignes][cols];
+
+//			int isVide = fis.read();
+//			if(isVide==0){
+				for (int i=0; i<lignes; i++)
+					for (int j=0; j<cols; j++)
+						fixeValeurCase(fis.read(), i, j);
+//			}
 
 			// lire l'histoire
 			current_step = fis.read();
-			int size = fis.read();
-			histories = new ArrayList<>(size);
-			for(int i=0; i<size; i++){
-				histories.add((Action)is.readObject());
-			}
-			is.close();
+			histories = readHistory(fis);
+
 			fis.close();
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException(e);
@@ -39,8 +44,14 @@ public class PlateauConcret extends PlateauAbstrait {
 			throw new RuntimeException(e);
 		} catch (ClassNotFoundException e) {
 			throw new RuntimeException(e);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
 		}
-		System.out.println("size_his:"+histories.size()+", steps_cur:"+current_step);
+		System.err.println("size_his:"+histories.size()+", steps_cur:"+current_step);
+
+//		for(int i=0; i<=current_step; i++){
+//			refais(i);
+//		}
 	}
 
 	public void joue(int valeur, int i, int j) {
@@ -57,7 +68,7 @@ public class PlateauConcret extends PlateauAbstrait {
 				|| !in(ligne_max, ligne_min, cases.length)
 				|| !in(colonne_max, colonne_min, cases[0].length))
 		{
-			System.out.println("index out of array !");
+			System.err.println("index out of array !");
 			return;
 		}
 
@@ -86,7 +97,7 @@ public class PlateauConcret extends PlateauAbstrait {
 		}
 		histories.add(action);
 		current_step = histories.size()-1;
-		System.out.println("[mettre_a_jour_history] size_his:"+histories.size()+", steps_cur:"+current_step);
+		System.err.println("[mettre_a_jour_history] size_his:"+histories.size()+", steps_cur:"+current_step);
 	}
 
 	public int valeurCase(int i, int j) {
@@ -116,12 +127,12 @@ public class PlateauConcret extends PlateauAbstrait {
 			current_step -= 1;
 			if(action instanceof ActionJoue){
 				ActionJoue actJoue = (ActionJoue) action;
-				System.out.println("action_efface:"+actJoue.getValeur_old()+","+actJoue.getLigne()+","+actJoue.getCol());
+				System.err.println("action_efface:"+actJoue.getValeur_old()+","+actJoue.getLigne()+","+actJoue.getCol());
 				fixeValeurCase(actJoue.getValeur_old(), actJoue.getLigne(), actJoue.getCol());
 			}else
 			if(action instanceof ActionEfface){
 				ActionEfface actEfface = (ActionEfface) action;
-				System.out.println("action_joue:"+actEfface.getLigne_min()+","+actEfface.getCol_min()
+				System.err.println("action_joue:"+actEfface.getLigne_min()+","+actEfface.getCol_min()
 						+","+actEfface.getLigne_max()+","+actEfface.getCol_max());
 				int[] data_efface = actEfface.getData_efface();
 				int nb_cols = (actEfface.getCol_max()-actEfface.getCol_min()) + 1;
@@ -131,43 +142,88 @@ public class PlateauConcret extends PlateauAbstrait {
 					fixeValeurCase(data_efface[i], ligne, col);
 				}
 			}
-			System.out.println("size_his:"+histories.size()+", steps_cur:"+current_step);
+			System.err.println("size_his:"+histories.size()+", steps_cur:"+current_step);
 		}
 	}
 
 	public void refais() {
 		if(peutRefaire()){
 			current_step += 1;
-			Action action = histories.get(current_step);
-			if(action instanceof ActionJoue){
-				ActionJoue actJoue = (ActionJoue) action;
-				super.joue(actJoue.getValeur_new(), actJoue.getLigne(), actJoue.getCol());
-			}else
-			if(action instanceof ActionEfface){
-				ActionEfface actEfface = (ActionEfface) action;
-				System.out.println(actEfface.getData_efface());
-				super.efface(actEfface.getLigne_min(), actEfface.getCol_min(), actEfface.getLigne_max(), actEfface.getCol_max());
-			}
+			refais(current_step);
+		}
+	}
+
+	private void refais(int step) {
+		Action action = histories.get(step);
+		if(action instanceof ActionJoue){
+			ActionJoue actJoue = (ActionJoue) action;
+			super.joue(actJoue.getValeur_new(), actJoue.getLigne(), actJoue.getCol());
+		}else
+		if(action instanceof ActionEfface){
+			ActionEfface actEfface = (ActionEfface) action;
+			super.efface(actEfface.getLigne_min(), actEfface.getCol_min(), actEfface.getLigne_max(), actEfface.getCol_max());
 		}
 	}
 
 	public void sauve(String fichier) throws Exception {
+		System.err.println("sauve:"+fichier);
 		FileOutputStream fos = new FileOutputStream(fichier);
-		ObjectOutputStream os = new ObjectOutputStream(fos);
 
-		// écrire map data
-		os.writeObject(cases);
+		// écrire map data (comme au debut, il est vide)
+		fos.write(nbLignes());
+		fos.write(nbColonnes());
+//		boolean isVide = isPlateauVide();
+//		fos.write(isVide?1:0);
+//		if(!isVide){
+			for (int i=0; i<nbLignes(); i++)
+				for (int j=0; j<nbColonnes(); j++)
+					fos.write(valeurCase(i, j));
+//		}
 
 		// écrire l'histoire
 		fos.write(current_step);
+		writeHistory(fos, histories);
+
+		fos.close();
+	}
+
+	private boolean isPlateauVide(){
+		for (int i=0; i<nbLignes(); i++)
+			for (int j=0; j<nbColonnes(); j++)
+				if(valeurCase(i, j)!=0)
+					return false;
+		return true;
+	}
+
+	private void writeHistory(FileOutputStream fos, List<Action> histories) throws Exception {
 		fos.write(histories.size());
 		for(int i=0; i<histories.size(); i++){
-			os.writeObject(histories.get(i));
+			Action action = histories.get(i);
+			fos.write(action.getAction());
+			action.write(fos);
 		}
+		fos.flush();
+	}
 
-		os.flush();
-		os.close();
-		fos.close();
+	private List<Action> readHistory(FileInputStream fis) throws Exception {
+		int size = fis.read();
+		List<Action> list = new ArrayList<>(size);
+		for(int i=0; i<size; i++){
+			int actType = fis.read();
+			Action action = null;
+			switch (actType) {
+				case TYPE_ACT_JOUE:
+					action = new ActionJoue().read(fis);
+					break;
+				case TYPE_ACT_EFFACE:
+					action = new ActionEfface().read(fis);
+					break;
+			}
+			if(action!=null){
+				list.add(action);
+			}
+		}
+		return list;
 	}
 
 }

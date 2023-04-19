@@ -1,8 +1,9 @@
 package Plateau;
 
-import java.io.Serializable;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 
-public class ActionEfface extends Action implements Serializable {
+public class ActionEfface extends Action {
 
     private int[] data_efface;
     private int ligne_min;
@@ -10,8 +11,12 @@ public class ActionEfface extends Action implements Serializable {
     private int ligne_max;
     private int col_max;
 
-    public ActionEfface(int ligne_min, int col_min, int ligne_max, int col_max, int[] data_efface) {
+    public ActionEfface(){
         super(TYPE_ACT_EFFACE);
+    }
+
+    public ActionEfface(int ligne_min, int col_min, int ligne_max, int col_max, int[] data_efface) {
+        this();
         this.ligne_min = ligne_min;
         this.col_min = col_min;
         this.ligne_max = ligne_max;
@@ -58,4 +63,30 @@ public class ActionEfface extends Action implements Serializable {
     public void setData_efface(int[] data_efface) {
         this.data_efface = data_efface;
     }
+
+    @Override
+    public void write(FileOutputStream fos) throws Exception {
+        fos.write(ligne_min);
+        fos.write(col_min);
+        fos.write(ligne_max);
+        fos.write(col_max);
+        fos.write(data_efface.length);
+        for(int data : data_efface){
+            fos.write(data);
+        }
+    }
+
+    public Action read(FileInputStream fis) throws Exception {
+        ligne_min = fis.read();
+        col_min = fis.read();
+        ligne_max = fis.read();
+        col_max = fis.read();
+        int data_len = fis.read();
+        data_efface = new int[data_len];
+        for(int i=0; i<data_len; i++){
+            data_efface[i] = fis.read();
+        }
+        return this;
+    }
+
 }
